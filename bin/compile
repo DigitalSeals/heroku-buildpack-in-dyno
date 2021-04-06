@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+# bin/compile <build-dir> <cache-dir> <env-dir>
+
+# fail hard
+set -o pipefail
+# fail harder
+set -eu
+# move hidden files too, just in case
+shopt -s dotglob
+
+BINFILE="mysql-8.0.23-linux-glibc2.17-x86_64-minimal.tar.xz"
+BINURL="https://storage.googleapis.com/hagedoo-common-bucket/bin/$BINFILE"
+BUILDPACK_DIR="$(dirname $(dirname $0))"
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+CRT="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+DATABASE_URL="mysql://root:password@localhost:3306/app"
+WDIR=.heroku/mysql
+echo "-----> MySQL Install $BINFILE"
+mkdir -p $BUILD_DIR/.heroku/mysql
+mkdir -p $BUILD_DIR/.heroku/mysql/data
+
+wget $BINURL
+tar -C $BUILD_DIR/.heroku/mysql -xf $BINFILE
+rm $BINFILE
+
+chmod +x $CRT/../scripts/*.sh
+
+CLIENT="$BUILD_DIR/$WDIR/bin"
+cp $CRT/../scripts/* $CLIENT
+
+cat > $BUILD_DIR/env.sh <<EOF
+export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
+export DATABASE_URL="$DATABASE_URL"
+cd $CLIENT
+
+echo "-----> initialize mysql"
+./mysqld --initialize-insecure --datadir="$BUILD_DIR/.heroku/mysql/data" --socket=/tmp/mysql.sock
+
+echo "-----> create db"
+./mysqld_safe --datadir="$BUILD_DIR/.heroku/mysql/data" --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock &
+PID=\$!
+./wait_for_mysql_pid.sh
+
+./mysql -u root --skip-password -e "CREATE DATABASE app;"
+
+./mysql -u root --skip-password -e "alter user 'root'@'localhost' identified with mysql_native_password by 'password';"
+sleep 1
+kill -9 \$PID
+EOF
+
+chmod +x $BUILD_DIR/env.sh
+
+echo "-----> MySQL set PATH"
+mkdir -p $BUILD_DIR/.profile.d
+cat > $BUILD_DIR/.profile.d/10-mysql.sh <<EOF
+export PATH="/app/${WDIR}/bin:\$PATH"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/app/$WDIR/lib"
+export DATABASE_URL="$DATABASE_URL"
+export DATABASE_LOCAL_URL="$DATABASE_URL"
+echo 'ENV are set'
+if test ! -s "/var/tmp/mysql.pid"; then
+  echo 'Start'
+  mysqld_safe --datadir=/app/.heroku/mysql/data --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock >/dev/null &
+  wait_for_mysql_pid.sh
+  kill -9 \$!
+fi
+EOF
+chmod +x $BUILD_DIR/.profile.d/10-mysql.sh
+
+cat > $BUILDPACK_DIR/export <<EOF
+export PATH="/app/${WDIR}/bin:\$PATH"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:/app/$WDIR/lib"
+export DATABASE_URL="$DATABASE_URL"
+EOF
+
+cp $BUILD_DIR/.profile.d/10-mysql.sh $BUILDPACK_DIR/background
+echo "exit 0" >> $BUILDPACK_DIR/background
+
+$BUILD_DIR/env.sh
+
+echo "-----> MySQL Done 🎉"
