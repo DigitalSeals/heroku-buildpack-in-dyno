@@ -18,41 +18,47 @@ ENV_DIR=$3
 CRT="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 DATABASE_URL="mysql://root:password@localhost:3306/app"
 WDIR=.heroku/mysql
-echo "-----> MySQL Install $BINFILE"
-mkdir -p $BUILD_DIR/.heroku/mysql
-mkdir -p $BUILD_DIR/.heroku/mysql/data
+if [! -e $CACHE_DIR ]
 
-wget $BINURL
-tar -C $BUILD_DIR/.heroku/mysql -xf $BINFILE
-rm $BINFILE
+  echo "-----> MySQL Install $BINFILE"
+  mkdir -p $BUILD_DIR/.heroku/mysql
+  mkdir -p $BUILD_DIR/.heroku/mysql/data
 
-chmod +x $CRT/../scripts/*.sh
+  wget $BINURL
+  tar -C $BUILD_DIR/.heroku/mysql -xf $BINFILE
+  rm $BINFILE
 
-CLIENT="$BUILD_DIR/$WDIR/bin"
-cp $CRT/../scripts/* $CLIENT
+  chmod +x $CRT/../scripts/*.sh
 
-cat > $BUILD_DIR/env.sh <<EOF
-export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
-export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
-export DATABASE_URL="$DATABASE_URL"
-cd $CLIENT
+  CLIENT="$BUILD_DIR/$WDIR/bin"
+  cp $CRT/../scripts/* $CLIENT
 
-echo "-----> initialize mysql"
-./mysqld --initialize-insecure --datadir="$BUILD_DIR/.heroku/mysql/data" --socket=/tmp/mysql.sock
+  cat > $BUILD_DIR/env.sh <<EOF
+    export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
+    export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
+    export DATABASE_URL="$DATABASE_URL"
+    cd $CLIENT
 
-echo "-----> create db"
-./mysqld_safe --datadir="$BUILD_DIR/.heroku/mysql/data" --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock &
-PID=\$!
-./wait_for_mysql_pid.sh
+    echo "-----> initialize mysql"
+    ./mysqld --initialize-insecure --datadir="$BUILD_DIR/.heroku/mysql/data" --socket=/tmp/mysql.sock
 
-./mysql -u root --skip-password -e "CREATE DATABASE app;"
+    echo "-----> create db"
+    ./mysqld_safe --datadir="$BUILD_DIR/.heroku/mysql/data" --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock &
+    PID=\$!
+    ./wait_for_mysql_pid.sh
 
-./mysql -u root --skip-password -e "alter user 'root'@'localhost' identified with mysql_native_password by 'password';"
-sleep 1
-kill -9 \$PID
+    ./mysql -u root --skip-password -e "CREATE DATABASE app;"
+
+    ./mysql -u root --skip-password -e "alter user 'root'@'localhost' identified with mysql_native_password by 'password';"
+    sleep 1
+    kill -9 \$PID
 EOF
 
-chmod +x $BUILD_DIR/env.sh
+  chmod +x $BUILD_DIR/env.sh
+else
+  echo '-----> Use cache MySQL build'
+  cp $CACHE_DIR/* $BUILD_DIR/.heroku
+fi
 
 echo "-----> MySQL set PATH"
 mkdir -p $BUILD_DIR/.profile.d
@@ -79,7 +85,11 @@ EOF
 
 cp $BUILD_DIR/.profile.d/10-mysql.sh $BUILDPACK_DIR/background
 echo "exit 0" >> $BUILDPACK_DIR/background
-
-$BUILD_DIR/env.sh
+if [! -e $CACHE_DIR ]
+  $BUILD_DIR/env.sh
+else
+  mkdir -p  $CACHE_DIR
+  cp $BUILD_DIR/.heroku/mysql $CACHE_DIR
+fi
 
 echo "-----> MySQL Done 🎉"
