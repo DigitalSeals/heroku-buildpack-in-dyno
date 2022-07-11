@@ -37,15 +37,13 @@ export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
 export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
 export DATABASE_URL="$DATABASE_URL"
 
+print "Stack version: ${STACK}"
 
-{ # try
+if [[ $STACK == "heroku-22" ]]; then
   cp $CRT/../libs/libncurses.so.5 $BUILD_DIR/$WDIR/lib/libncurses.so.5
   cp $CRT/../libs/libtinfo.so.5 $BUILD_DIR/$WDIR/lib/libtinfo.so.5
-  ls $BUILD_DIR/$WDIR/lib/ -la
-  echo 'added libncurses.so.5'
-} || { # catch
-  echo 'some error'
-}
+fi
+
 cd $CLIENT
 
 echo "-----> initialize mysql"
