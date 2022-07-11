@@ -29,6 +29,14 @@ rm $BINFILE
 chmod +x $CRT/../scripts/*.sh
 
 CLIENT="$BUILD_DIR/$WDIR/bin"
+
+cp $CRT/../scripts/* $CLIENT
+
+cat > $BUILD_DIR/env.sh <<EOF
+export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
+export DATABASE_URL="$DATABASE_URL"
+
 { # try
   ln -s /usr/lib/libncursesw.so.6.0 /usr/lib/libncurses.so.5
   ln -s /usr/lib/libncursesw.so.6.0 /usr/lib/libtinfo.so.5
@@ -36,12 +44,6 @@ CLIENT="$BUILD_DIR/$WDIR/bin"
 } || { # catch
   echo 'libncursesw.so.6.0 not found'
 }
-cp $CRT/../scripts/* $CLIENT
-
-cat > $BUILD_DIR/env.sh <<EOF
-export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
-export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
-export DATABASE_URL="$DATABASE_URL"
 cd $CLIENT
 
 echo "-----> initialize mysql"
