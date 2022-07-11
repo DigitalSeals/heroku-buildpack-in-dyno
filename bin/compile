@@ -37,11 +37,11 @@ export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
 export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
 export DATABASE_URL="$DATABASE_URL"
 
-ls $BUILD_DIR -la
 
 { # try
-  ln -s /usr/lib/libncursesw.so.6.0 /usr/lib/libncurses.so.5
-  ln -s /usr/lib/libncursesw.so.6.0 /usr/lib/libtinfo.so.5
+  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libncurses.so.5
+  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libtinfo.so.5
+  ls $BUILD_DIR/$WDIR/lib/ -la
   echo 'libncursesw.so.6.0 <= libncurses.so.5'
 } || { # catch
   echo 'libncursesw.so.6.0 not found'
