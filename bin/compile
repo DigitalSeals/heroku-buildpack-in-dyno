@@ -37,7 +37,7 @@ export PATH="$BUILD_DIR/$WDIR/bin:\$PATH"
 export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$BUILD_DIR/$WDIR/lib"
 export DATABASE_URL="$DATABASE_URL"
 
-print "Stack version: ${STACK}"
+echo "Stack version: ${STACK}"
 
 if [[ $STACK == "heroku-22" ]]; then
   cp $CRT/../libs/libncurses.so.5 $BUILD_DIR/$WDIR/lib/libncurses.so.5
