@@ -30,7 +30,7 @@ chmod +x $CRT/../scripts/*.sh
 
 CLIENT="$BUILD_DIR/$WDIR/bin"
 { # try
-  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libncurses.so.5 && ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libtinfo.so.5
+  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/bin/libncurses.so.5 && ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/bin/libtinfo.so.5
   echo 'libncursesw.so.6.0 <= libncurses.so.5'
 } || { # catch
   echo 'libncursesw.so.6.0 not found'
@@ -47,7 +47,7 @@ echo "-----> initialize mysql"
 ./mysqld --initialize-insecure --datadir="$BUILD_DIR/.heroku/mysql/data" --socket=/tmp/mysql.sock
 
 echo "-----> create db"
-./mysqld_safe --datadir="$BUILD_DIR/.heroku/mysql/data" --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock &
+./mysqld_safe --datadir="$BUILD_DIR/.heroku/mysql/data" --pid-file=/var/tmp/mysql.pid --socket=/tmp/mysql.sock --initialize-insecure &
 PID=\$!
 ./wait_for_mysql_pid.sh
 
