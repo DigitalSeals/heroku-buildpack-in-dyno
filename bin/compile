@@ -39,12 +39,11 @@ export DATABASE_URL="$DATABASE_URL"
 
 
 { # try
-  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libncurses.so.5
-  ln -s /usr/lib/libncursesw.so.6.0 $BUILD_DIR/$WDIR/lib/libtinfo.so.5
+  cp $CRT/../libs/libncurses.so.5 $BUILD_DIR/$WDIR/lib/libncurses.so.5
+  cp $CRT/../libs/libtinfo.so.5 $BUILD_DIR/$WDIR/lib/libtinfo.so.5
   ls $BUILD_DIR/$WDIR/lib/ -la
-  echo 'libncursesw.so.6.0 <= libncurses.so.5'
+  echo 'added libncurses.so.5'
 } || { # catch
-  echo 'libncursesw.so.6.0 not found'
 }
 cd $CLIENT
 
