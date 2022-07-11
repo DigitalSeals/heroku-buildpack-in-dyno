@@ -44,6 +44,7 @@ export DATABASE_URL="$DATABASE_URL"
   ls $BUILD_DIR/$WDIR/lib/ -la
   echo 'added libncurses.so.5'
 } || { # catch
+  echo 'some error'
 }
 cd $CLIENT
 
